@@ -62,9 +62,9 @@ app.use((req, res, next) => {
   const stripeRoutes = await import('./routes/stripe-integration');
   app.use('/api/admin', stripeRoutes.default);
   
-  // Register client onboarding routes
+  // Register client onboarding routes with tenant detection so clients can self-setup via their subdomain
   const clientRoutes = await import('./routes/client');
-  app.use('/api/client', clientRoutes.default);
+  app.use('/api/client', tenantMiddleware, clientRoutes.default);
 
   // Apply tenant middleware to remaining routes
   app.use(tenantMiddleware);

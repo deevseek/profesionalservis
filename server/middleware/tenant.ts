@@ -115,16 +115,19 @@ export const tenantMiddleware = async (req: Request, res: Response, next: NextFu
     ];
     
     // Setup routes are only for super admins - require proper tenant detection
-    const superAdminOnlyRoutes = ['/api/setup', '/api/admin'];
-    
-    if (superAdminOnlyRoutes.some(route => req.path.startsWith(route))) {
-      // Setup routes require super admin access
-      if (subdomain !== 'admin' && subdomain !== 'main' && !req.path.startsWith('/api/admin')) {
-        return res.status(403).json({ 
-          error: 'Access denied',
-          message: 'Setup dan admin panel hanya dapat diakses oleh super admin.'
-        });
+    const superAdminOnlyRoutes = ['/api/admin'];
+
+    // Allow setup wizard to run on tenant subdomains for self-onboarding.
+    // Still grant automatic super admin access when accessed from main/admin.
+    if (req.path.startsWith('/api/setup')) {
+      if (subdomain === 'admin' || subdomain === 'main') {
+        req.isSuperAdmin = true;
       }
+      // Continue to tenant detection so req.tenant is available for client setups
+      return next();
+    }
+
+    if (superAdminOnlyRoutes.some(route => req.path.startsWith(route))) {
       req.isSuperAdmin = true;
       return next();
     }
